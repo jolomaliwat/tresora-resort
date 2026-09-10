@@ -37,6 +37,19 @@ export default function ResortBooking() {
 
   const [activeImage, setActiveImage] = useState(null);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const visibleCount = isMobile ? 1 : 3;
+  const maxSlide = Math.max(0, galleryImages.length - visibleCount);
 
   // Dynamic Browser Tab Title and Resort Icon
   useEffect(() => {
@@ -156,8 +169,12 @@ export default function ResortBooking() {
   };
 
   const moveGallery = (direction) => {
-    const total = galleryImages.length;
-    setCurrentSlide((prev) => (prev + direction + total) % total);
+    setCurrentSlide((prev) => {
+      const next = prev + direction;
+      if (next < 0) return 0; // Strictly bounded at start
+      if (next > maxSlide) return maxSlide; // Strictly bounded at end
+      return next;
+    });
   };
 
   const openLightbox = (image) => setActiveImage(image);
@@ -421,10 +438,11 @@ export default function ResortBooking() {
           border: 0;
         }
 
-        /* GALLERY - FLUID SNAP CAROUSEL */
+        /* GALLERY CAROUSEL - STRICT BOUNDS */
         .gallery-section {
           padding: clamp(3rem, 6vw, 6rem) 0 4rem;
           background: var(--cream);
+          overflow: hidden;
         }
 
         .section-head {
@@ -461,28 +479,22 @@ export default function ResortBooking() {
         }
 
         .carousel-wrap {
+          position: relative;
           width: min(1180px, calc(100% - 2.5rem));
           margin: 0 auto;
-          overflow-x: auto;
-          scroll-snap-type: x mandatory;
-          scroll-behavior: smooth;
-          -webkit-overflow-scrolling: touch;
-          scrollbar-width: none;
-        }
-
-        .carousel-wrap::-webkit-scrollbar {
-          display: none;
+          overflow: hidden;
         }
 
         .carousel-track {
           display: flex;
           gap: 16px;
+          transition: transform .5s cubic-bezier(.25,1,.5,1);
+          will-change: transform;
         }
 
         .gallery-card {
           flex: 0 0 calc((100% - 32px) / 3);
           height: clamp(280px, 34vw, 440px);
-          scroll-snap-align: start;
           padding: 0;
           border: 0;
           border-radius: 12px;
@@ -498,7 +510,6 @@ export default function ResortBooking() {
           display: block;
           object-fit: cover;
           object-position: center;
-          transition: transform 0.6s ease;
         }
 
         .carousel-controls {
@@ -541,6 +552,12 @@ export default function ResortBooking() {
           font-size: 1.15rem;
           display: grid;
           place-items: center;
+          transition: opacity .2s ease;
+        }
+
+        .arrow-btn:disabled {
+          opacity: .3;
+          cursor: not-allowed;
         }
 
         /* BOOKING FORM & RESPONSIVE DATE INPUTS */
@@ -805,9 +822,9 @@ export default function ResortBooking() {
           .hero-content { grid-template-columns: 1fr; padding-top: 6rem; gap: 2rem; }
           .booking-inner { grid-template-columns: 1fr; }
           
-          /* Gallery Mobile Fix: 82% width cards that swipe smoothly */
+          /* Gallery Mobile Fix: 100% width card with zero overflow */
           .gallery-card { 
-            flex: 0 0 82%; 
+            flex: 0 0 100%; 
             height: 350px; 
           }
 
@@ -929,7 +946,14 @@ export default function ResortBooking() {
         </div>
 
         <div className="carousel-wrap">
-          <div className="carousel-track">
+          <div
+            className="carousel-track"
+            style={{
+              transform: isMobile
+                ? `translateX(calc(-${currentSlide} * (100% + 16px)))`
+                : `translateX(calc(-${currentSlide} * ((100% - 32px) / 3 + 16px)))`,
+            }}
+          >
             {galleryImages.map((image) => (
               <button
                 type="button"
@@ -946,23 +970,11 @@ export default function ResortBooking() {
 
         <div className="carousel-controls">
           <div className="dots">
-            {galleryImages.map((_, index) => (
+            {Array.from({ length: maxSlide + 1 }).map((_, index) => (
               <button
                 key={index}
                 className={`dot ${index === currentSlide ? "active" : ""}`}
-                onClick={() => {
-                  setCurrentSlide(index);
-                  const wrap = document.querySelector(".carousel-wrap");
-                  if (wrap) {
-                    const card = wrap.querySelectorAll(".gallery-card")[index];
-                    if (card)
-                      card.scrollIntoView({
-                        behavior: "smooth",
-                        inline: "start",
-                        block: "nearest",
-                      });
-                  }
-                }}
+                onClick={() => setCurrentSlide(index)}
                 aria-label={`Go to gallery slide ${index + 1}`}
               />
             ))}
@@ -971,23 +983,17 @@ export default function ResortBooking() {
           <div className="arrow-group">
             <button
               className="arrow-btn"
-              onClick={() => {
-                moveGallery(-1);
-                const wrap = document.querySelector(".carousel-wrap");
-                if (wrap) wrap.scrollBy({ left: -300, behavior: "smooth" });
-              }}
-              aria-label="Previous gallery images"
+              disabled={currentSlide === 0}
+              onClick={() => moveGallery(-1)}
+              aria-label="Previous gallery image"
             >
               ←
             </button>
             <button
               className="arrow-btn"
-              onClick={() => {
-                moveGallery(1);
-                const wrap = document.querySelector(".carousel-wrap");
-                if (wrap) wrap.scrollBy({ left: 300, behavior: "smooth" });
-              }}
-              aria-label="Next gallery images"
+              disabled={currentSlide === maxSlide}
+              onClick={() => moveGallery(1)}
+              aria-label="Next gallery image"
             >
               →
             </button>
