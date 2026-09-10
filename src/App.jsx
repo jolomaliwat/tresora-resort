@@ -1140,7 +1140,11 @@ export default function ResortBooking() {
               </div>
 
               <div className="payment-box">
-                <img className="qr" src="/qrph.png" alt="QRPH payment code" />
+                <img
+                  className="qr"
+                  src="public/qrph.png"
+                  alt="QRPH payment code"
+                />
 
                 <div>
                   <h3>Payment via QRPH</h3>
