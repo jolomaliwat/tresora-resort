@@ -38,21 +38,6 @@ export default function ResortBooking() {
   const [activeImage, setActiveImage] = useState(null);
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  // Responsive gallery slide calculation
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  const visibleCount = isMobile ? 1 : 3;
-  const maxSlide = Math.max(0, galleryImages.length - visibleCount);
-
   // Dynamic Browser Tab Title and Resort Icon
   useEffect(() => {
     document.title = "Tresora";
@@ -68,14 +53,7 @@ export default function ResortBooking() {
       "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌴</text></svg>";
   }, []);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev >= maxSlide ? 0 : prev + 1));
-    }, 4000);
-
-    return () => clearInterval(timer);
-  }, [maxSlide]);
-
+  // Keyboard navigation for lightbox
   useEffect(() => {
     const onKeyDown = (e) => {
       if (e.key === "Escape") setActiveImage(null);
@@ -178,12 +156,8 @@ export default function ResortBooking() {
   };
 
   const moveGallery = (direction) => {
-    setCurrentSlide((prev) => {
-      const next = prev + direction;
-      if (next < 0) return maxSlide;
-      if (next > maxSlide) return 0;
-      return next;
-    });
+    const total = galleryImages.length;
+    setCurrentSlide((prev) => (prev + direction + total) % total);
   };
 
   const openLightbox = (image) => setActiveImage(image);
@@ -447,11 +421,10 @@ export default function ResortBooking() {
           border: 0;
         }
 
-        /* GALLERY CAROUSEL - RESPONSIVE FIXES */
+        /* GALLERY - FLUID SNAP CAROUSEL */
         .gallery-section {
           padding: clamp(3rem, 6vw, 6rem) 0 4rem;
           background: var(--cream);
-          overflow: hidden;
         }
 
         .section-head {
@@ -488,22 +461,28 @@ export default function ResortBooking() {
         }
 
         .carousel-wrap {
-          position: relative;
-          width: 100%;
-          overflow: hidden;
-          padding: 0 max(1.2rem, calc((100vw - 1180px) / 2));
+          width: min(1180px, calc(100% - 2.5rem));
+          margin: 0 auto;
+          overflow-x: auto;
+          scroll-snap-type: x mandatory;
+          scroll-behavior: smooth;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: none;
+        }
+
+        .carousel-wrap::-webkit-scrollbar {
+          display: none;
         }
 
         .carousel-track {
           display: flex;
           gap: 16px;
-          transition: transform .6s cubic-bezier(.2,.75,.2,1);
-          will-change: transform;
         }
 
         .gallery-card {
           flex: 0 0 calc((100% - 32px) / 3);
-          height: clamp(260px, 34vw, 440px);
+          height: clamp(280px, 34vw, 440px);
+          scroll-snap-align: start;
           padding: 0;
           border: 0;
           border-radius: 12px;
@@ -564,7 +543,7 @@ export default function ResortBooking() {
           place-items: center;
         }
 
-        /* BOOKING FORM & RESPONSIVE DATE INPUTS FIX */
+        /* BOOKING FORM & RESPONSIVE DATE INPUTS */
         .booking-section {
           position: relative;
           padding: clamp(3.5rem, 6vw, 6rem) 1.2rem;
@@ -661,7 +640,7 @@ export default function ResortBooking() {
           flex-direction: column;
           gap: .3rem;
           width: 100%;
-          min-width: 0; /* Critical for grid item overflow prevention */
+          min-width: 0;
         }
 
         .field.full { grid-column: 1 / -1; }
@@ -674,7 +653,6 @@ export default function ResortBooking() {
           font-weight: 700;
         }
 
-        /* Strict Responsive Input Styling */
         .field input {
           box-sizing: border-box;
           width: 100%;
@@ -689,7 +667,6 @@ export default function ResortBooking() {
           font-size: .85rem;
         }
 
-        /* Fix native mobile browser date input stretching */
         .field input[type="date"] {
           min-height: 44px;
           padding-right: .5rem;
@@ -821,24 +798,19 @@ export default function ResortBooking() {
         .light-nav.prev { left: 1rem; }
         .light-nav.next { right: 1rem; }
 
-        /* MOBILE MEDIA QUERIES (FIXES FOR SMALL SCREENS) */
+        /* MOBILE MEDIA QUERIES */
         @media (max-width: 768px) {
           .nav-links { display: none; }
           .hero { min-height: auto; }
           .hero-content { grid-template-columns: 1fr; padding-top: 6rem; gap: 2rem; }
           .booking-inner { grid-template-columns: 1fr; }
           
-          /* Single Card Gallery Carousel for Mobile */
+          /* Gallery Mobile Fix: 82% width cards that swipe smoothly */
           .gallery-card { 
-            flex: 0 0 85%; 
-            height: 320px; 
-          }
-          
-          .carousel-track {
-            gap: 12px;
+            flex: 0 0 82%; 
+            height: 350px; 
           }
 
-          /* Single Column Form Layout for Date Inputs on Mobile */
           .field-grid { 
             grid-template-columns: 1fr; 
           }
@@ -957,14 +929,7 @@ export default function ResortBooking() {
         </div>
 
         <div className="carousel-wrap">
-          <div
-            className="carousel-track"
-            style={{
-              transform: isMobile
-                ? `translateX(calc(-${currentSlide} * (85% + 12px)))`
-                : `translateX(calc(-${currentSlide} * ((100% - 32px) / 3 + 16px)))`,
-            }}
-          >
+          <div className="carousel-track">
             {galleryImages.map((image) => (
               <button
                 type="button"
@@ -981,11 +946,23 @@ export default function ResortBooking() {
 
         <div className="carousel-controls">
           <div className="dots">
-            {Array.from({ length: maxSlide + 1 }).map((_, index) => (
+            {galleryImages.map((_, index) => (
               <button
                 key={index}
                 className={`dot ${index === currentSlide ? "active" : ""}`}
-                onClick={() => setCurrentSlide(index)}
+                onClick={() => {
+                  setCurrentSlide(index);
+                  const wrap = document.querySelector(".carousel-wrap");
+                  if (wrap) {
+                    const card = wrap.querySelectorAll(".gallery-card")[index];
+                    if (card)
+                      card.scrollIntoView({
+                        behavior: "smooth",
+                        inline: "start",
+                        block: "nearest",
+                      });
+                  }
+                }}
                 aria-label={`Go to gallery slide ${index + 1}`}
               />
             ))}
@@ -994,14 +971,22 @@ export default function ResortBooking() {
           <div className="arrow-group">
             <button
               className="arrow-btn"
-              onClick={() => moveGallery(-1)}
+              onClick={() => {
+                moveGallery(-1);
+                const wrap = document.querySelector(".carousel-wrap");
+                if (wrap) wrap.scrollBy({ left: -300, behavior: "smooth" });
+              }}
               aria-label="Previous gallery images"
             >
               ←
             </button>
             <button
               className="arrow-btn"
-              onClick={() => moveGallery(1)}
+              onClick={() => {
+                moveGallery(1);
+                const wrap = document.querySelector(".carousel-wrap");
+                if (wrap) wrap.scrollBy({ left: 300, behavior: "smooth" });
+              }}
               aria-label="Next gallery images"
             >
               →
