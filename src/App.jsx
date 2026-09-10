@@ -38,7 +38,19 @@ export default function ResortBooking() {
   const [activeImage, setActiveImage] = useState(null);
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  const visibleCount = 3;
+  // Responsive gallery slide calculation
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const visibleCount = isMobile ? 1 : 3;
   const maxSlide = Math.max(0, galleryImages.length - visibleCount);
 
   // Dynamic Browser Tab Title and Resort Icon
@@ -201,6 +213,7 @@ export default function ResortBooking() {
           background: var(--cream);
           color: var(--text);
           font-family: "DM Sans", sans-serif;
+          overflow-x: hidden;
         }
 
         button, input { font: inherit; }
@@ -208,7 +221,8 @@ export default function ResortBooking() {
 
         .tresora-site {
           min-height: 100vh;
-          overflow: hidden;
+          width: 100%;
+          overflow-x: hidden;
           background: var(--cream);
         }
 
@@ -433,14 +447,15 @@ export default function ResortBooking() {
           border: 0;
         }
 
-        /* GALLERY - High Quality Image Display */
+        /* GALLERY CAROUSEL - RESPONSIVE FIXES */
         .gallery-section {
-          padding: clamp(4rem, 8vw, 7rem) 0 6rem;
+          padding: clamp(3rem, 6vw, 6rem) 0 4rem;
           background: var(--cream);
+          overflow: hidden;
         }
 
         .section-head {
-          width: min(1180px, calc(100% - 3rem));
+          width: min(1180px, calc(100% - 2.5rem));
           margin: 0 auto 2rem;
           display: flex;
           align-items: end;
@@ -460,7 +475,7 @@ export default function ResortBooking() {
         .section-title {
           margin: 0;
           font-family: "Playfair Display", serif;
-          font-size: clamp(2.4rem, 5vw, 4rem);
+          font-size: clamp(2.2rem, 5vw, 4rem);
           font-weight: 400;
           line-height: 1;
         }
@@ -476,19 +491,19 @@ export default function ResortBooking() {
           position: relative;
           width: 100%;
           overflow: hidden;
-          padding: 0 max(1.5rem, calc((100vw - 1180px) / 2));
+          padding: 0 max(1.2rem, calc((100vw - 1180px) / 2));
         }
 
         .carousel-track {
           display: flex;
           gap: 16px;
-          transition: transform .8s cubic-bezier(.2,.75,.2,1);
+          transition: transform .6s cubic-bezier(.2,.75,.2,1);
           will-change: transform;
         }
 
         .gallery-card {
           flex: 0 0 calc((100% - 32px) / 3);
-          height: clamp(280px, 34vw, 440px);
+          height: clamp(260px, 34vw, 440px);
           padding: 0;
           border: 0;
           border-radius: 12px;
@@ -504,30 +519,11 @@ export default function ResortBooking() {
           display: block;
           object-fit: cover;
           object-position: center;
-          transition: transform 0.6s ease, filter 0.6s ease;
-        }
-
-        .gallery-card::after {
-          content: "";
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(115deg, transparent 20%, rgba(255,255,255,.22) 48%, transparent 70%);
-          transform: translateX(-130%);
-          transition: transform .9s ease;
-          pointer-events: none;
-        }
-
-        .gallery-card:hover img {
-          transform: scale(1.05);
-          filter: saturate(1.08);
-        }
-
-        .gallery-card:hover::after {
-          transform: translateX(130%);
+          transition: transform 0.6s ease;
         }
 
         .carousel-controls {
-          width: min(1180px, calc(100% - 3rem));
+          width: min(1180px, calc(100% - 2.5rem));
           margin: 1.4rem auto 0;
           display: flex;
           justify-content: space-between;
@@ -540,8 +536,8 @@ export default function ResortBooking() {
         }
 
         .dot {
-          width: 7px;
-          height: 7px;
+          width: 8px;
+          height: 8px;
           border-radius: 50%;
           border: 0;
           padding: 0;
@@ -564,23 +560,19 @@ export default function ResortBooking() {
           background: transparent;
           color: var(--green);
           font-size: 1.15rem;
-          transition: background .25s ease, color .25s ease, transform .25s ease;
+          display: grid;
+          place-items: center;
         }
 
-        .arrow-btn:hover {
-          background: var(--green);
-          color: white;
-          transform: translateY(-2px);
-        }
-
-        /* BOOKING FORM & RESPONSIVE DATE INPUTS */
+        /* BOOKING FORM & RESPONSIVE DATE INPUTS FIX */
         .booking-section {
           position: relative;
-          padding: clamp(4rem, 8vw, 7rem) 1.5rem;
+          padding: clamp(3.5rem, 6vw, 6rem) 1.2rem;
           background:
             linear-gradient(100deg, rgba(29,48,23,.94), rgba(29,48,23,.82)),
             url("/farm-3.jpg") center/cover no-repeat;
           color: white;
+          overflow: hidden;
         }
 
         .booking-inner {
@@ -588,7 +580,7 @@ export default function ResortBooking() {
           margin: 0 auto;
           display: grid;
           grid-template-columns: .85fr 1.15fr;
-          gap: clamp(2rem, 6vw, 5rem);
+          gap: clamp(2rem, 5vw, 4.5rem);
           align-items: center;
         }
 
@@ -602,14 +594,14 @@ export default function ResortBooking() {
         }
 
         .experience-list {
-          margin-top: 2rem;
+          margin-top: 1.8rem;
           display: grid;
           grid-template-columns: repeat(2, 1fr);
           gap: .7rem;
         }
 
         .experience {
-          padding: 1rem;
+          padding: .9rem;
           border: 1px solid rgba(255,255,255,.14);
           border-radius: 10px;
           background: rgba(255,255,255,.045);
@@ -618,7 +610,7 @@ export default function ResortBooking() {
         .experience strong {
           display: block;
           font-family: "Playfair Display", serif;
-          font-size: 1.05rem;
+          font-size: 1rem;
           font-weight: 400;
         }
 
@@ -631,77 +623,77 @@ export default function ResortBooking() {
           background: rgba(255,253,248,.97);
           color: var(--text);
           border-radius: 18px;
-          padding: clamp(1.4rem, 4vw, 2.5rem);
+          padding: clamp(1.2rem, 3.5vw, 2.2rem);
           box-shadow: 0 30px 80px rgba(0,0,0,.22);
+          width: 100%;
+          box-sizing: border-box;
         }
 
         .booking-card h2 {
           margin: 0;
           font-family: "Playfair Display", serif;
-          font-size: 2rem;
+          font-size: 1.8rem;
           font-weight: 500;
         }
 
         .booking-card-subtitle {
-          margin: .35rem 0 1.5rem;
+          margin: .35rem 0 1.2rem;
           color: var(--muted);
-          font-size: .85rem;
+          font-size: .82rem;
         }
 
         .booking-form {
           display: flex;
           flex-direction: column;
-          gap: 1rem;
+          gap: .9rem;
+          width: 100%;
         }
 
         .field-grid {
           display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: .8rem;
+          grid-template-columns: 1fr 1fr;
+          gap: .75rem;
+          width: 100%;
         }
 
         .field {
           display: flex;
           flex-direction: column;
-          gap: .35rem;
-          min-width: 0; /* Prevents input overflow */
+          gap: .3rem;
+          width: 100%;
+          min-width: 0; /* Critical for grid item overflow prevention */
         }
 
         .field.full { grid-column: 1 / -1; }
 
         .field label {
-          font-size: .7rem;
+          font-size: .68rem;
           text-transform: uppercase;
-          letter-spacing: .1em;
+          letter-spacing: .08em;
           color: #686b5f;
           font-weight: 700;
         }
 
-        /* Clean, Responsive Input Styles */
+        /* Strict Responsive Input Styling */
         .field input {
+          box-sizing: border-box;
           width: 100%;
           max-width: 100%;
-          padding: .82rem .9rem;
+          min-width: 0;
+          padding: .75rem .8rem;
           border: 1px solid #ddd9cd;
           border-radius: 8px;
           background: #fff;
           outline: none;
           color: var(--text);
-          font-size: .88rem;
-          transition: border-color .2s ease, box-shadow .2s ease;
+          font-size: .85rem;
         }
 
-        /* Compact, responsive native date pickers */
+        /* Fix native mobile browser date input stretching */
         .field input[type="date"] {
-          appearance: none;
-          -webkit-appearance: none;
-          min-height: 42px;
-          line-height: 1.2;
-        }
-
-        .field input:focus {
-          border-color: var(--green-2);
-          box-shadow: 0 0 0 3px rgba(64,90,50,.1);
+          min-height: 44px;
+          padding-right: .5rem;
+          font-family: inherit;
         }
 
         .file-upload-label {
@@ -709,20 +701,17 @@ export default function ResortBooking() {
           align-items: center;
           justify-content: center;
           gap: .5rem;
-          padding: .82rem .9rem;
+          padding: .75rem;
           border: 1px dashed #b5a98d;
           border-radius: 8px;
           background: #fcfbfa;
           color: var(--green);
-          font-size: .8rem;
+          font-size: .78rem;
           font-weight: 600;
           cursor: pointer;
-          transition: background .2s ease, border-color .2s ease;
-        }
-
-        .file-upload-label:hover {
-          background: #f4ede0;
-          border-color: var(--green);
+          text-align: center;
+          width: 100%;
+          box-sizing: border-box;
         }
 
         .file-name-preview {
@@ -730,81 +719,68 @@ export default function ResortBooking() {
           font-size: .72rem;
           color: var(--green-2);
           font-weight: 500;
+          word-break: break-all;
         }
 
         .payment-box {
           margin-top: .2rem;
-          padding: 1rem;
+          padding: .9rem;
           border-radius: 12px;
           background: var(--cream);
           border: 1px solid #e3dece;
           display: grid;
-          grid-template-columns: 105px 1fr;
-          gap: 1rem;
+          grid-template-columns: 95px 1fr;
+          gap: .9rem;
           align-items: center;
+          box-sizing: border-box;
         }
 
         .qr {
-          width: 105px;
-          height: 105px;
+          width: 95px;
+          height: 95px;
           background: white;
           border-radius: 8px;
           border: 1px solid #ddd9cd;
-          padding: 5px;
+          padding: 4px;
           object-fit: contain;
         }
 
         .payment-box h3 {
-          margin: 0 0 .35rem;
-          font-size: .9rem;
+          margin: 0 0 .25rem;
+          font-size: .88rem;
         }
 
         .payment-box p {
-          margin: 0 0 .8rem;
+          margin: 0 0 .6rem;
           color: var(--muted);
-          font-size: .75rem;
-          line-height: 1.5;
+          font-size: .73rem;
+          line-height: 1.4;
         }
 
         .submit-btn {
           width: 100%;
           border: 0;
           border-radius: 999px;
-          padding: 1rem;
+          padding: .95rem;
           background: var(--green);
           color: white;
           font-weight: 700;
           text-transform: uppercase;
-          letter-spacing: .12em;
-          font-size: .76rem;
-          transition: background .25s ease, transform .25s ease;
-        }
-
-        .submit-btn:hover:not(:disabled) {
-          background: var(--green-2);
-          transform: translateY(-2px);
+          letter-spacing: .1em;
+          font-size: .75rem;
         }
 
         .submit-btn:disabled { opacity: .55; cursor: not-allowed; }
 
         .success, .error {
-          padding: .8rem .9rem;
+          padding: .75rem .85rem;
           border-radius: 8px;
-          font-size: .8rem;
-          margin-bottom: .9rem;
+          font-size: .78rem;
+          margin-bottom: .8rem;
         }
 
-        .success {
-          background: #e3ecd9;
-          color: #304b27;
-          border: 1px solid #aebe9d;
-        }
-
-        .error {
-          background: #f5dfd8;
-          color: #8b3e28;
-          border: 1px solid #d7a595;
-        }
+        .success { background: #e3ecd9; color: #304b27; border: 1px solid #aebe9d; }
+        .error { background: #f5dfd8; color: #8b3e28; border: 1px solid #d7a595; }
 
         /* LIGHTBOX POPUP */
         .lightbox {
@@ -816,77 +792,68 @@ export default function ResortBooking() {
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 1.5rem;
-          animation: fadeIn .25s ease;
+          padding: 1rem;
         }
 
         .lightbox img {
-          max-width: 90vw;
-          max-height: 88vh;
+          max-width: 92vw;
+          max-height: 85vh;
           width: auto;
           height: auto;
           object-fit: contain;
           border-radius: 8px;
-          box-shadow: 0 20px 60px rgba(0,0,0,.6);
-          animation: zoomIn .35s cubic-bezier(.2,.75,.2,1);
         }
 
         .close, .light-nav {
           position: absolute;
-          width: 46px;
-          height: 46px;
+          width: 42px;
+          height: 42px;
           border-radius: 50%;
           border: 1px solid rgba(255,255,255,.25);
-          background: rgba(255,255,255,.08);
+          background: rgba(255,255,255,.12);
           color: white;
           display: grid;
           place-items: center;
-          font-size: 1.4rem;
+          font-size: 1.3rem;
         }
 
-        .close { top: 1.3rem; right: 1.3rem; }
-        .light-nav.prev { left: 1.3rem; }
-        .light-nav.next { right: 1.3rem; }
+        .close { top: 1rem; right: 1rem; }
+        .light-nav.prev { left: 1rem; }
+        .light-nav.next { right: 1rem; }
 
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-
-        @keyframes zoomIn {
-          from { opacity: 0; transform: scale(.94); }
-          to { opacity: 1; transform: scale(1); }
-        }
-
-        @media (max-width: 900px) {
+        /* MOBILE MEDIA QUERIES (FIXES FOR SMALL SCREENS) */
+        @media (max-width: 768px) {
           .nav-links { display: none; }
           .hero { min-height: auto; }
-          .hero-content { grid-template-columns: 1fr; padding-top: 7rem; }
+          .hero-content { grid-template-columns: 1fr; padding-top: 6rem; gap: 2rem; }
           .booking-inner { grid-template-columns: 1fr; }
-          .gallery-card { flex-basis: calc((100% - 16px) / 2); }
-          .carousel-track { gap: 16px; }
-        }
+          
+          /* Single Card Gallery Carousel for Mobile */
+          .gallery-card { 
+            flex: 0 0 85%; 
+            height: 320px; 
+          }
+          
+          .carousel-track {
+            gap: 12px;
+          }
 
-        @media (max-width: 600px) {
-          .hero h1 { font-size: 3.5rem; }
-          .hero-meta { gap: 1.2rem; }
-          .section-head { display: block; }
-          .section-copy { margin-top: 1rem; }
-          .gallery-card { flex-basis: 86%; height: 330px; }
-          .field-grid { grid-template-columns: 1fr; }
-          .field.full { grid-column: auto; }
-          .payment-box { grid-template-columns: 1fr; }
-          .qr { margin: 0 auto; }
-          .experience-list { grid-template-columns: 1fr 1fr; }
-          .light-nav { width: 40px; height: 40px; }
-          .map-frame-container { height: 280px; }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          html { scroll-behavior: auto; }
-          .carousel-track, .gallery-card img, .gallery-card::after,
-          .primary-btn, .outline-btn, .arrow-btn, .submit-btn {
-            transition: none !important;
+          /* Single Column Form Layout for Date Inputs on Mobile */
+          .field-grid { 
+            grid-template-columns: 1fr; 
+          }
+          
+          .field.full { 
+            grid-column: auto; 
+          }
+          
+          .payment-box { 
+            grid-template-columns: 1fr; 
+            text-align: center;
+          }
+          
+          .qr { 
+            margin: 0 auto; 
           }
         }
       `}</style>
@@ -912,7 +879,6 @@ export default function ResortBooking() {
         </nav>
 
         <div className="hero-content">
-          {/* LEFT COLUMN: TITLE & INTRO */}
           <div className="hero-left">
             <p className="eyebrow">Nature · Relax · Reconnect</p>
             <h1>
@@ -935,7 +901,6 @@ export default function ResortBooking() {
               </a>
             </div>
 
-            {/* HERO META WITH FULL TRESORA GOOGLE REVIEWS LINK */}
             <div className="hero-meta">
               {resortHighlights.map((item) => (
                 <div className="hero-stat" key={item.label}>
@@ -960,7 +925,6 @@ export default function ResortBooking() {
             </div>
           </div>
 
-          {/* RIGHT COLUMN: TRESORA TANAY FARM AND RESORT GOOGLE MAP */}
           <div className="hero-map-card">
             <div className="map-header">
               <h3>Tresora Tanay Farm and Resort</h3>
@@ -996,7 +960,9 @@ export default function ResortBooking() {
           <div
             className="carousel-track"
             style={{
-              transform: `translateX(calc(-${currentSlide} * ((100% - 32px) / 3 + 16px)))`,
+              transform: isMobile
+                ? `translateX(calc(-${currentSlide} * (85% + 12px)))`
+                : `translateX(calc(-${currentSlide} * ((100% - 32px) / 3 + 16px)))`,
             }}
           >
             {galleryImages.map((image) => (
@@ -1188,7 +1154,6 @@ export default function ResortBooking() {
                     />
                   </div>
 
-                  {/* REQUIRED ATTACHMENT FIELD */}
                   <div className="field">
                     <label>Attach Payment Receipt *</label>
                     <label
