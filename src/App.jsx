@@ -24,7 +24,7 @@ export default function ResortBooking() {
     email: "",
     checkIn: "",
     checkOut: "",
-    guests: "2",
+    guests: "",
     referenceNumber: "",
     receiptFile: null,
   });
@@ -154,7 +154,7 @@ export default function ResortBooking() {
         email: "",
         checkIn: "",
         checkOut: "",
-        guests: "2",
+        guests: "",
         referenceNumber: "",
         receiptFile: null,
       });
@@ -1058,7 +1058,7 @@ export default function ResortBooking() {
                     required
                     value={formData.fullName}
                     onChange={handleChange}
-                    placeholder="John Doe"
+                    placeholder=""
                   />
                 </div>
 
@@ -1070,7 +1070,7 @@ export default function ResortBooking() {
                     required
                     value={formData.phone}
                     onChange={handleChange}
-                    placeholder="09123456789"
+                    placeholder=""
                   />
                 </div>
 
@@ -1082,7 +1082,7 @@ export default function ResortBooking() {
                     required
                     value={formData.email}
                     onChange={handleChange}
-                    placeholder="john@example.com"
+                    placeholder=""
                   />
                 </div>
 
@@ -1115,7 +1115,7 @@ export default function ResortBooking() {
                     type="number"
                     name="guests"
                     min="1"
-                    max="20"
+                    max="100"
                     required
                     value={formData.guests}
                     onChange={handleChange}
@@ -1124,7 +1124,11 @@ export default function ResortBooking() {
               </div>
 
               <div className="payment-box">
-                <img className="qr" src="/qrph.png" alt="QRPH payment code" />
+                <img
+                  className="qr"
+                  src="src/qrph.png"
+                  alt="QRPH payment code"
+                />
 
                 <div>
                   <h3>Payment via QRPH</h3>
