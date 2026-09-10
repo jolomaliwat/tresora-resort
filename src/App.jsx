@@ -24,7 +24,7 @@ export default function ResortBooking() {
     email: "",
     checkIn: "",
     checkOut: "",
-    guests: "",
+    guests: "2",
     referenceNumber: "",
     receiptFile: null,
   });
@@ -41,7 +41,7 @@ export default function ResortBooking() {
   const visibleCount = 3;
   const maxSlide = Math.max(0, galleryImages.length - visibleCount);
 
-  // Dynamic Browser Tab Title and Resort Icon (Palm Tree)
+  // Dynamic Browser Tab Title and Resort Icon
   useEffect(() => {
     document.title = "Tresora";
 
@@ -103,7 +103,6 @@ export default function ResortBooking() {
       }
     } else if (name === "checkIn") {
       setFormData((prev) => {
-        // Reset checkOut if selected checkOut is earlier than new checkIn
         const updatedCheckOut =
           prev.checkOut && prev.checkOut < value ? "" : prev.checkOut;
         return { ...prev, checkIn: value, checkOut: updatedCheckOut };
@@ -117,7 +116,6 @@ export default function ResortBooking() {
     e.preventDefault();
     setStatus({ loading: true, success: false, error: "" });
 
-    // Validation check for mandatory receipt attachment
     if (!formData.receiptFile) {
       setStatus({
         loading: false,
@@ -127,7 +125,6 @@ export default function ResortBooking() {
       return;
     }
 
-    // Validation check for date order
     if (formData.checkOut < formData.checkIn) {
       setStatus({
         loading: false,
@@ -154,7 +151,7 @@ export default function ResortBooking() {
         email: "",
         checkIn: "",
         checkOut: "",
-        guests: "",
+        guests: "2",
         referenceNumber: "",
         receiptFile: null,
       });
@@ -436,7 +433,7 @@ export default function ResortBooking() {
           border: 0;
         }
 
-        /* GALLERY */
+        /* GALLERY - High Quality Image Display */
         .gallery-section {
           padding: clamp(4rem, 8vw, 7rem) 0 6rem;
           background: var(--cream);
@@ -491,13 +488,13 @@ export default function ResortBooking() {
 
         .gallery-card {
           flex: 0 0 calc((100% - 32px) / 3);
-          height: clamp(260px, 34vw, 440px);
+          height: clamp(280px, 34vw, 440px);
           padding: 0;
           border: 0;
-          border-radius: 8px;
+          border-radius: 12px;
           overflow: hidden;
           position: relative;
-          background: #ddd;
+          background: #1d2b1a;
           box-shadow: 0 12px 30px rgba(32,36,27,.12);
         }
 
@@ -506,7 +503,8 @@ export default function ResortBooking() {
           height: 100%;
           display: block;
           object-fit: cover;
-          transition: transform 1s cubic-bezier(.2,.75,.2,1), filter .7s ease;
+          object-position: center;
+          transition: transform 0.6s ease, filter 0.6s ease;
         }
 
         .gallery-card::after {
@@ -520,7 +518,7 @@ export default function ResortBooking() {
         }
 
         .gallery-card:hover img {
-          transform: scale(1.08);
+          transform: scale(1.05);
           filter: saturate(1.08);
         }
 
@@ -575,7 +573,7 @@ export default function ResortBooking() {
           transform: translateY(-2px);
         }
 
-        /* BOOKING */
+        /* BOOKING FORM & RESPONSIVE DATE INPUTS */
         .booking-section {
           position: relative;
           padding: clamp(4rem, 8vw, 7rem) 1.5rem;
@@ -658,7 +656,7 @@ export default function ResortBooking() {
 
         .field-grid {
           display: grid;
-          grid-template-columns: 1fr 1fr;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: .8rem;
         }
 
@@ -666,6 +664,7 @@ export default function ResortBooking() {
           display: flex;
           flex-direction: column;
           gap: .35rem;
+          min-width: 0; /* Prevents input overflow */
         }
 
         .field.full { grid-column: 1 / -1; }
@@ -678,15 +677,26 @@ export default function ResortBooking() {
           font-weight: 700;
         }
 
+        /* Clean, Responsive Input Styles */
         .field input {
           width: 100%;
+          max-width: 100%;
           padding: .82rem .9rem;
           border: 1px solid #ddd9cd;
           border-radius: 8px;
           background: #fff;
           outline: none;
           color: var(--text);
+          font-size: .88rem;
           transition: border-color .2s ease, box-shadow .2s ease;
+        }
+
+        /* Compact, responsive native date pickers */
+        .field input[type="date"] {
+          appearance: none;
+          -webkit-appearance: none;
+          min-height: 42px;
+          line-height: 1.2;
         }
 
         .field input:focus {
@@ -796,26 +806,28 @@ export default function ResortBooking() {
           border: 1px solid #d7a595;
         }
 
-        /* LIGHTBOX */
+        /* LIGHTBOX POPUP */
         .lightbox {
           position: fixed;
           inset: 0;
           z-index: 100;
-          background: rgba(11,18,9,.94);
-          backdrop-filter: blur(10px);
+          background: rgba(10, 15, 9, 0.96);
+          backdrop-filter: blur(12px);
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 2rem;
+          padding: 1.5rem;
           animation: fadeIn .25s ease;
         }
 
         .lightbox img {
-          max-width: min(1200px, 92vw);
-          max-height: 86vh;
+          max-width: 90vw;
+          max-height: 88vh;
+          width: auto;
+          height: auto;
           object-fit: contain;
-          border-radius: 10px;
-          box-shadow: 0 30px 90px rgba(0,0,0,.5);
+          border-radius: 8px;
+          box-shadow: 0 20px 60px rgba(0,0,0,.6);
           animation: zoomIn .35s cubic-bezier(.2,.75,.2,1);
         }
 
@@ -1089,7 +1101,7 @@ export default function ResortBooking() {
                     required
                     value={formData.fullName}
                     onChange={handleChange}
-                    placeholder=""
+                    placeholder="John Doe"
                   />
                 </div>
 
@@ -1101,7 +1113,7 @@ export default function ResortBooking() {
                     required
                     value={formData.phone}
                     onChange={handleChange}
-                    placeholder=""
+                    placeholder="09123456789"
                   />
                 </div>
 
@@ -1113,7 +1125,7 @@ export default function ResortBooking() {
                     required
                     value={formData.email}
                     onChange={handleChange}
-                    placeholder=""
+                    placeholder="john@example.com"
                   />
                 </div>
 
@@ -1146,7 +1158,7 @@ export default function ResortBooking() {
                     type="number"
                     name="guests"
                     min="1"
-                    max="100"
+                    max="20"
                     required
                     value={formData.guests}
                     onChange={handleChange}
@@ -1155,11 +1167,7 @@ export default function ResortBooking() {
               </div>
 
               <div className="payment-box">
-                <img
-                  className="qr"
-                  src="src/qrph.png"
-                  alt="QRPH payment code"
-                />
+                <img className="qr" src="/qrph.png" alt="QRPH payment code" />
 
                 <div>
                   <h3>Payment via QRPH</h3>
