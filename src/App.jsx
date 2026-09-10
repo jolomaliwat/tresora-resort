@@ -171,8 +171,8 @@ export default function ResortBooking() {
   const moveGallery = (direction) => {
     setCurrentSlide((prev) => {
       const next = prev + direction;
-      if (next < 0) return 0; // Strictly bounded at start
-      if (next > maxSlide) return maxSlide; // Strictly bounded at end
+      if (next < 0) return 0;
+      if (next > maxSlide) return maxSlide;
       return next;
     });
   };
@@ -563,7 +563,7 @@ export default function ResortBooking() {
         /* BOOKING FORM & RESPONSIVE DATE INPUTS */
         .booking-section {
           position: relative;
-          padding: clamp(3.5rem, 6vw, 6rem) 1.2rem;
+          padding: clamp(3rem, 6vw, 6rem) 1rem;
           background:
             linear-gradient(100deg, rgba(29,48,23,.94), rgba(29,48,23,.82)),
             url("/farm-3.jpg") center/cover no-repeat;
@@ -623,6 +623,7 @@ export default function ResortBooking() {
           box-shadow: 0 30px 80px rgba(0,0,0,.22);
           width: 100%;
           box-sizing: border-box;
+          overflow: hidden;
         }
 
         .booking-card h2 {
@@ -643,13 +644,15 @@ export default function ResortBooking() {
           flex-direction: column;
           gap: .9rem;
           width: 100%;
+          box-sizing: border-box;
         }
 
         .field-grid {
           display: grid;
-          grid-template-columns: 1fr 1fr;
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
           gap: .75rem;
           width: 100%;
+          box-sizing: border-box;
         }
 
         .field {
@@ -657,7 +660,8 @@ export default function ResortBooking() {
           flex-direction: column;
           gap: .3rem;
           width: 100%;
-          min-width: 0;
+          min-width: 0; /* Prevents flex/grid overflowing */
+          box-sizing: border-box;
         }
 
         .field.full { grid-column: 1 / -1; }
@@ -675,7 +679,7 @@ export default function ResortBooking() {
           width: 100%;
           max-width: 100%;
           min-width: 0;
-          padding: .75rem .8rem;
+          padding: .75rem .7rem;
           border: 1px solid #ddd9cd;
           border-radius: 8px;
           background: #fff;
@@ -684,9 +688,15 @@ export default function ResortBooking() {
           font-size: .85rem;
         }
 
+        /* Strict Sizing for Mobile Date Picker */
         .field input[type="date"] {
+          -webkit-appearance: none;
+          -moz-appearance: none;
+          appearance: none;
           min-height: 44px;
-          padding-right: .5rem;
+          width: 100%;
+          max-width: 100%;
+          box-sizing: border-box;
           font-family: inherit;
         }
 
@@ -727,6 +737,7 @@ export default function ResortBooking() {
           gap: .9rem;
           align-items: center;
           box-sizing: border-box;
+          width: 100%;
         }
 
         .qr {
@@ -822,12 +833,17 @@ export default function ResortBooking() {
           .hero-content { grid-template-columns: 1fr; padding-top: 6rem; gap: 2rem; }
           .booking-inner { grid-template-columns: 1fr; }
           
+          .booking-card {
+            padding: 1.25rem 1rem;
+          }
+
           /* Gallery Mobile Fix: 100% width card with zero overflow */
           .gallery-card { 
             flex: 0 0 100%; 
             height: 350px; 
           }
 
+          /* Stack fields cleanly on small mobile screens */
           .field-grid { 
             grid-template-columns: 1fr; 
           }
@@ -1124,11 +1140,7 @@ export default function ResortBooking() {
               </div>
 
               <div className="payment-box">
-                <img
-                  className="qr"
-                  src="src/qrph.png"
-                  alt="QRPH payment code"
-                />
+                <img className="qr" src="/qrph.png" alt="QRPH payment code" />
 
                 <div>
                   <h3>Payment via QRPH</h3>
