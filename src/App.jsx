@@ -3,9 +3,10 @@ import React, { useEffect, useState } from "react";
 const SPREADSHEET_API_URL =
   "https://script.google.com/macros/s/AKfycbyaJ2x2dlzSzmLvRevF-BJV7idIs2VmhYlpVyz9a4FyG93OvnA7Zt3tUOtVELTvlqO_uA/exec";
 
+// Updated stats based on listing details
 const resortHighlights = [
-  { label: "Google Rating", value: "5.0 ★" },
-  { label: "Google Reviews", value: "4 Reviews" },
+  { label: "Max Capacity", value: "34 Guests" },
+  { label: "Stay Duration", value: "22 Hours" },
   { label: "Guest Satisfaction", value: "100%" },
 ];
 
@@ -26,7 +27,7 @@ export default function ResortBooking() {
     email: "",
     checkIn: "",
     checkOut: "",
-    guests: "",
+    guests: "18",
     referenceNumber: "",
     receiptFile: null,
   });
@@ -45,7 +46,7 @@ export default function ResortBooking() {
   const [bookedDates, setBookedDates] = useState([]);
   const [calendarDate, setCalendarDate] = useState(new Date());
 
-  // 1. FETCH BOOKED DATES FROM SPREADSHEET ON LOAD
+  // Fetch booked dates from Google Spreadsheet
   const fetchBookedDates = async () => {
     try {
       const response = await fetch(SPREADSHEET_API_URL);
@@ -75,7 +76,7 @@ export default function ResortBooking() {
   const maxSlide = Math.max(0, galleryImages.length - visibleCount);
 
   useEffect(() => {
-    document.title = "Tresora";
+    document.title = "Tresora Tanay Farm and Resort";
 
     let link = document.querySelector("link[rel~='icon']");
     if (!link) {
@@ -107,7 +108,6 @@ export default function ResortBooking() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [activeImage]);
 
-  // Date Logic Helpers
   const todayStr = new Date().toISOString().split("T")[0];
 
   const formatDateStr = (year, month, day) => {
@@ -183,7 +183,6 @@ export default function ResortBooking() {
     }
   };
 
-  // 2. SUBMIT BOOKING AND RE-SYNC WITH SPREADSHEET
   const handleSubmit = async (e) => {
     e.preventDefault();
     setStatus({ loading: true, success: false, error: "" });
@@ -229,12 +228,11 @@ export default function ResortBooking() {
         email: "",
         checkIn: "",
         checkOut: "",
-        guests: "",
+        guests: "18",
         referenceNumber: "",
         receiptFile: null,
       });
 
-      // Refetch spreadsheet dates immediately after adding a new booking
       await fetchBookedDates();
     } catch (err) {
       console.error(err);
@@ -257,7 +255,6 @@ export default function ResortBooking() {
 
   const openLightbox = (image) => setActiveImage(image);
 
-  // Calendar render helpers
   const year = calendarDate.getFullYear();
   const month = calendarDate.getMonth();
   const monthName = calendarDate.toLocaleString("default", { month: "long" });
@@ -525,6 +522,42 @@ export default function ResortBooking() {
           width: 100%;
           height: 100%;
           border: 0;
+        }
+
+        /* AMENITIES SECTION */
+        .amenities-section {
+          width: min(1180px, calc(100% - 2.5rem));
+          margin: 0 auto;
+          padding: 3rem 0 1rem;
+        }
+
+        .amenities-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 1.2rem;
+          margin-top: 1.5rem;
+        }
+
+        .amenity-card {
+          background: var(--white);
+          border: 1px solid var(--line);
+          border-radius: 12px;
+          padding: 1.2rem;
+          box-shadow: 0 4px 15px rgba(0,0,0,.03);
+        }
+
+        .amenity-card h4 {
+          margin: 0 0 .4rem;
+          font-family: "Playfair Display", serif;
+          font-size: 1.1rem;
+          color: var(--green);
+        }
+
+        .amenity-card p {
+          margin: 0;
+          font-size: .82rem;
+          color: var(--muted);
+          line-height: 1.5;
         }
 
         /* GALLERY */
@@ -941,24 +974,33 @@ export default function ResortBooking() {
           word-break: break-all;
         }
 
-        /* ENLARGED PAYMENT & QR CODE BOX */
+        /* FLUID RESPONSIVE PAYMENT & QR BOX */
         .payment-box {
           margin-top: .2rem;
-          padding: 1.1rem;
+          padding: clamp(0.85rem, 2.5vw, 1.25rem);
           border-radius: 12px;
           background: var(--cream);
           border: 1px solid #e3dece;
           display: grid;
-          grid-template-columns: 160px 1fr;
-          gap: 1.25rem;
+          grid-template-columns: minmax(130px, 170px) 1fr;
+          gap: clamp(0.75rem, 2vw, 1.25rem);
           align-items: center;
           box-sizing: border-box;
           width: 100%;
         }
 
+        .qr-wrapper {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          width: 100%;
+        }
+
         .qr {
-          width: 160px;
-          height: 160px;
+          width: 100%;
+          max-width: 170px;
+          height: auto;
+          aspect-ratio: 1 / 1;
           background: white;
           border-radius: 12px;
           border: 1px solid #ddd9cd;
@@ -1040,6 +1082,7 @@ export default function ResortBooking() {
         .light-nav.prev { left: 1rem; }
         .light-nav.next { right: 1rem; }
 
+        /* MOBILE MEDIA QUERIES */
         @media (max-width: 768px) {
           .nav-links { display: none; }
           .hero { min-height: auto; }
@@ -1056,10 +1099,14 @@ export default function ResortBooking() {
             justify-items: center;
           }
           .qr { 
-            width: 200px;
-            height: 200px;
-            max-width: 100%;
+            max-width: 200px;
             margin: 0 auto; 
+          }
+        }
+
+        @media (max-width: 480px) {
+          .qr {
+            max-width: 150px;
           }
         }
       `}</style>
@@ -1072,6 +1119,7 @@ export default function ResortBooking() {
           </a>
           <div className="nav-links">
             <a href="#home">Home</a>
+            <a href="#amenities">Offers</a>
             <a href="#gallery">Gallery</a>
             <a href="#booking">Stay</a>
             <a href="#booking">Contact</a>
@@ -1083,15 +1131,16 @@ export default function ResortBooking() {
 
         <div className="hero-content">
           <div className="hero-left">
-            <p className="eyebrow">Nature · Relax · Reconnect</p>
+            <p className="eyebrow">Private Farm & Resort</p>
             <h1>
               TRESORA
-              <span className="script">Farm & Resort Getaway</span>
+              <span className="script">Exclusive Countryside Getaway</span>
             </h1>
             <p className="hero-description">
-              Escape to a peaceful countryside retreat where nature, comfort,
-              fresh farm experiences, and riverside moments come together in
-              Tanay, Rizal.
+              Escape the city and unwind in our private farm resort in Tanay,
+              Rizal. Perfect for family outings, reunions, birthdays, and group
+              gatherings. Enjoy exclusive access to the entire property with
+              22-hour standard stays.
             </p>
             <div className="hero-actions">
               <a className="primary-btn" href="#gallery">
@@ -1120,7 +1169,7 @@ export default function ResortBooking() {
                   marginTop: "0.5rem",
                 }}
               >
-                Read verified Google Reviews ↗
+                Read Google Reviews ↗
               </a>
             </div>
           </div>
@@ -1128,7 +1177,7 @@ export default function ResortBooking() {
           <div className="hero-map-card">
             <div className="map-header">
               <h3>Tresora Tanay Farm and Resort</h3>
-              <span>Tanay, Rizal, Philippines</span>
+              <span>Near Daranak Falls, Tanay, Rizal</span>
             </div>
             <div className="map-frame-container">
               <iframe
@@ -1142,6 +1191,56 @@ export default function ResortBooking() {
         </div>
       </section>
 
+      {/* AMENITIES SECTION */}
+      <section className="amenities-section" id="amenities">
+        <p className="section-kicker">What this place offers</p>
+        <h2 className="section-title">Property Highlights</h2>
+        <div className="amenities-grid">
+          <div className="amenity-card">
+            <h4>🏊 Private Infinity Pool</h4>
+            <p>
+              24-hour outdoor access, approx. 3ft–5ft depth for all-day
+              swimming.
+            </p>
+          </div>
+          <div className="amenity-card">
+            <h4>🏡 Exclusive Rental</h4>
+            <p>
+              Entire property access — no sharing with other guests during your
+              stay.
+            </p>
+          </div>
+          <div className="amenity-card">
+            <h4>🛏️ Rooms for Up to 34</h4>
+            <p>
+              3 air-conditioned rooms (Room 1: 18 pax | Room 2: 8 pax | Room 3:
+              8 pax).
+            </p>
+          </div>
+          <div className="amenity-card">
+            <h4>🍳 Kitchen & BBQ Setup</h4>
+            <p>
+              Basic kitchen with fridge, cooking basics, pots, pans, and outdoor
+              BBQ grill.
+            </p>
+          </div>
+          <div className="amenity-card">
+            <h4>🎱 Entertainment & Pavilion</h4>
+            <p>
+              Covered pavilion area equipped with pool table and TV for group
+              gatherings.
+            </p>
+          </div>
+          <div className="amenity-card">
+            <h4>🔥 Firepit & Outdoors</h4>
+            <p>
+              Outdoor dining space, firepit for slow evenings, and outdoor
+              shower.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* GALLERY SECTION */}
       <section className="gallery-section" id="gallery">
         <div className="section-head">
@@ -1150,8 +1249,8 @@ export default function ResortBooking() {
             <h2 className="section-title">Our Gallery</h2>
           </div>
           <p className="section-copy">
-            Take a look around the farm, cottages, riverside, and peaceful
-            spaces waiting for you at Tresora.
+            Take a look around the farm grounds, air-conditioned rooms, outdoor
+            pavilion, and 24-hour pool at Tresora.
           </p>
         </div>
 
@@ -1218,8 +1317,9 @@ export default function ResortBooking() {
             <p className="section-kicker">Your perfect getaway awaits</p>
             <h2 className="section-title">Reserve Your Stay</h2>
             <p>
-              Check our live availability calendar below. Select your stay,
-              complete your deposit via QRPH, and attach proof of payment.
+              Standard stays are up to 22 hours (1:00 PM check-in, 11:00 AM
+              check-out). Select your stay on the availability calendar, attach
+              your QRPH deposit receipt, and submit your request.
             </p>
 
             {/* LIVE CALENDAR */}
@@ -1320,20 +1420,20 @@ export default function ResortBooking() {
 
             <div className="experience-list">
               <div className="experience">
-                <strong>Farm Experience</strong>
-                <span>Fresh countryside moments</span>
+                <strong>24-Hour Infinity Pool</strong>
+                <span>Private 3ft-5ft outdoor pool</span>
               </div>
               <div className="experience">
-                <strong>Cozy Cottages</strong>
-                <span>Rest and reconnect</span>
+                <strong>On-Site Caretaker</strong>
+                <span>Assistance throughout stay</span>
               </div>
               <div className="experience">
-                <strong>Riverside Trail</strong>
-                <span>Nature at your doorstep</span>
+                <strong>Near Local Spots</strong>
+                <span>Minutes from Daranak Falls</span>
               </div>
               <div className="experience">
-                <strong>Bonfire Nights</strong>
-                <span>Slow evenings together</span>
+                <strong>Free Parking</strong>
+                <span>On-premises parking included</span>
               </div>
             </div>
           </div>
@@ -1341,7 +1441,8 @@ export default function ResortBooking() {
           <div className="booking-card">
             <h2>Guest Information</h2>
             <p className="booking-card-subtitle">
-              All fields are required to confirm your reservation.
+              Base rates cover up to 18 guests. Additional rates apply for
+              groups up to 34.
             </p>
 
             {status.success && (
@@ -1413,27 +1514,39 @@ export default function ResortBooking() {
                 </div>
 
                 <div className="field full">
-                  <label>Number of Guests *</label>
+                  <label>Number of Guests (Max 34) *</label>
                   <input
                     type="number"
                     name="guests"
                     min="1"
-                    max="100"
+                    max="34"
                     required
                     value={formData.guests}
                     onChange={handleChange}
                   />
+                  <span
+                    style={{
+                      fontSize: ".68rem",
+                      color: "var(--muted)",
+                      marginTop: "2px",
+                    }}
+                  >
+                    * Standard rate covers up to 18 guests. Different rate
+                    applies beyond 18 guests.
+                  </span>
                 </div>
               </div>
 
               <div className="payment-box">
-                <img className="qr" src="/qrph.png" alt="QRPH payment code" />
+                <div className="qr-wrapper">
+                  <img className="qr" src="/qrph.png" alt="QRPH payment code" />
+                </div>
 
                 <div>
                   <h3>Payment via QRPH</h3>
                   <p>
-                    Scan the QR code using GCash, Maya, ShopeePay, or your
-                    preferred bank app to pay the deposit.
+                    Scan the QR code using GCash, Maya, ShopeePay, or bank app
+                    to pay the deposit.
                   </p>
 
                   <div className="field" style={{ marginBottom: ".5rem" }}>
