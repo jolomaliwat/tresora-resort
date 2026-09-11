@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 
-// Exact stats for Tresora Tanay Farm and Resort
+const SPREADSHEET_API_URL =
+  "https://script.google.com/macros/s/AKfycbyaJ2x2dlzSzmLvRevF-BJV7idIs2VmhYlpVyz9a4FyG93OvnA7Zt3tUOtVELTvlqO_uA/exec";
+
 const resortHighlights = [
   { label: "Google Rating", value: "5.0 ★" },
   { label: "Google Reviews", value: "4 Reviews" },
@@ -39,6 +41,27 @@ export default function ResortBooking() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
 
+  // Dynamic Spreadsheet Sync State
+  const [bookedDates, setBookedDates] = useState([]);
+  const [calendarDate, setCalendarDate] = useState(new Date());
+
+  // 1. FETCH BOOKED DATES FROM SPREADSHEET ON LOAD
+  const fetchBookedDates = async () => {
+    try {
+      const response = await fetch(SPREADSHEET_API_URL);
+      const data = await response.json();
+      if (data && data.bookedDates) {
+        setBookedDates(data.bookedDates);
+      }
+    } catch (err) {
+      console.error("Failed to fetch booked dates:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchBookedDates();
+  }, []);
+
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth <= 768);
@@ -51,7 +74,6 @@ export default function ResortBooking() {
   const visibleCount = isMobile ? 1 : 3;
   const maxSlide = Math.max(0, galleryImages.length - visibleCount);
 
-  // Dynamic Browser Tab Title and Resort Icon
   useEffect(() => {
     document.title = "Tresora";
 
@@ -66,7 +88,6 @@ export default function ResortBooking() {
       "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌴</text></svg>";
   }, []);
 
-  // Keyboard navigation for lightbox
   useEffect(() => {
     const onKeyDown = (e) => {
       if (e.key === "Escape") setActiveImage(null);
@@ -85,6 +106,30 @@ export default function ResortBooking() {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [activeImage]);
+
+  // Date Logic Helpers
+  const todayStr = new Date().toISOString().split("T")[0];
+
+  const formatDateStr = (year, month, day) => {
+    const m = String(month + 1).padStart(2, "0");
+    const d = String(day).padStart(2, "0");
+    return `${year}-${m}-${d}`;
+  };
+
+  const isDateBooked = (dateStr) => bookedDates.includes(dateStr);
+
+  const isDateRangeBooked = (startStr, endStr) => {
+    if (!startStr || !endStr) return false;
+    let curr = new Date(startStr);
+    const end = new Date(endStr);
+
+    while (curr <= end) {
+      const formatted = curr.toISOString().split("T")[0];
+      if (bookedDates.includes(formatted)) return true;
+      curr.setDate(curr.getDate() + 1);
+    }
+    return false;
+  };
 
   const handleChange = (e) => {
     const { name, value, type, files } = e.target;
@@ -115,6 +160,30 @@ export default function ResortBooking() {
     }
   };
 
+  const handleCalendarDayClick = (dateStr) => {
+    if (isDateBooked(dateStr) || dateStr < todayStr) return;
+
+    if (!formData.checkIn || (formData.checkIn && formData.checkOut)) {
+      setFormData((prev) => ({ ...prev, checkIn: dateStr, checkOut: "" }));
+    } else if (formData.checkIn && !formData.checkOut) {
+      if (dateStr < formData.checkIn) {
+        setFormData((prev) => ({ ...prev, checkIn: dateStr, checkOut: "" }));
+      } else {
+        if (isDateRangeBooked(formData.checkIn, dateStr)) {
+          setStatus({
+            loading: false,
+            success: false,
+            error: "Selected stay contains dates that are already booked.",
+          });
+          return;
+        }
+        setStatus((prev) => ({ ...prev, error: "" }));
+        setFormData((prev) => ({ ...prev, checkOut: dateStr }));
+      }
+    }
+  };
+
+  // 2. SUBMIT BOOKING AND RE-SYNC WITH SPREADSHEET
   const handleSubmit = async (e) => {
     e.preventDefault();
     setStatus({ loading: true, success: false, error: "" });
@@ -137,10 +206,16 @@ export default function ResortBooking() {
       return;
     }
 
-    try {
-      const SPREADSHEET_API_URL =
-        "https://script.google.com/macros/s/AKfycbyaJ2x2dlzSzmLvRevF-BJV7idIs2VmhYlpVyz9a4FyG93OvnA7Zt3tUOtVELTvlqO_uA/exec";
+    if (isDateRangeBooked(formData.checkIn, formData.checkOut)) {
+      setStatus({
+        loading: false,
+        success: false,
+        error: "Your requested dates include days that are already booked.",
+      });
+      return;
+    }
 
+    try {
       await fetch(SPREADSHEET_API_URL, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -158,6 +233,9 @@ export default function ResortBooking() {
         referenceNumber: "",
         receiptFile: null,
       });
+
+      // Refetch spreadsheet dates immediately after adding a new booking
+      await fetchBookedDates();
     } catch (err) {
       console.error(err);
       setStatus({
@@ -179,6 +257,17 @@ export default function ResortBooking() {
 
   const openLightbox = (image) => setActiveImage(image);
 
+  // Calendar render helpers
+  const year = calendarDate.getFullYear();
+  const month = calendarDate.getMonth();
+  const monthName = calendarDate.toLocaleString("default", { month: "long" });
+  const firstDayIndex = new Date(year, month, 1).getDay();
+  const totalDaysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const changeMonth = (offset) => {
+    setCalendarDate(new Date(year, month + offset, 1));
+  };
+
   return (
     <main className="tresora-site">
       <style>{`
@@ -194,6 +283,7 @@ export default function ResortBooking() {
           --muted: #707464;
           --white: #fffdf8;
           --line: rgba(38,58,32,.16);
+          --booked: #d9534f;
         }
 
         * { box-sizing: border-box; }
@@ -217,7 +307,7 @@ export default function ResortBooking() {
           background: var(--cream);
         }
 
-        /* HERO / INTRO */
+        /* HERO */
         .hero {
           min-height: 92vh;
           position: relative;
@@ -391,7 +481,6 @@ export default function ResortBooking() {
           letter-spacing: .12em;
         }
 
-        /* HERO MAP CARD */
         .hero-map-card {
           background: rgba(255, 253, 248, 0.08);
           border: 1px solid rgba(255, 255, 255, 0.2);
@@ -438,7 +527,7 @@ export default function ResortBooking() {
           border: 0;
         }
 
-        /* GALLERY CAROUSEL - STRICT BOUNDS */
+        /* GALLERY */
         .gallery-section {
           padding: clamp(3rem, 6vw, 6rem) 0 4rem;
           background: var(--cream);
@@ -520,10 +609,7 @@ export default function ResortBooking() {
           align-items: center;
         }
 
-        .dots {
-          display: flex;
-          gap: .45rem;
-        }
+        .dots { display: flex; gap: .45rem; }
 
         .dot {
           width: 8px;
@@ -560,7 +646,7 @@ export default function ResortBooking() {
           cursor: not-allowed;
         }
 
-        /* BOOKING FORM & RESPONSIVE DATE INPUTS */
+        /* BOOKING & CALENDAR */
         .booking-section {
           position: relative;
           padding: clamp(3rem, 6vw, 6rem) 1rem;
@@ -575,10 +661,140 @@ export default function ResortBooking() {
           width: min(1180px, 100%);
           margin: 0 auto;
           display: grid;
-          grid-template-columns: .85fr 1.15fr;
-          gap: clamp(2rem, 5vw, 4.5rem);
-          align-items: center;
+          grid-template-columns: 1fr 1fr;
+          gap: clamp(2rem, 5vw, 3.5rem);
+          align-items: start;
         }
+
+        .calendar-card {
+          background: rgba(255, 253, 248, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          backdrop-filter: blur(12px);
+          border-radius: 18px;
+          padding: 1.5rem;
+          box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+          margin-top: 1.5rem;
+        }
+
+        .calendar-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 1rem;
+        }
+
+        .calendar-header h3 {
+          margin: 0;
+          font-family: "Playfair Display", serif;
+          font-size: 1.25rem;
+          color: #f4edda;
+          font-weight: 500;
+        }
+
+        .cal-nav-btn {
+          background: rgba(255, 255, 255, 0.12);
+          border: 1px solid rgba(255, 255, 255, 0.25);
+          color: white;
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          display: grid;
+          place-items: center;
+          transition: background .2s;
+        }
+
+        .cal-nav-btn:hover { background: rgba(255, 255, 255, 0.25); }
+
+        .calendar-weekdays {
+          display: grid;
+          grid-template-columns: repeat(7, 1fr);
+          text-align: center;
+          font-size: .7rem;
+          font-weight: 700;
+          color: rgba(255, 255, 255, 0.6);
+          margin-bottom: .5rem;
+          text-transform: uppercase;
+        }
+
+        .calendar-grid {
+          display: grid;
+          grid-template-columns: repeat(7, 1fr);
+          gap: 6px;
+        }
+
+        .cal-day {
+          aspect-ratio: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 8px;
+          font-size: .8rem;
+          font-weight: 500;
+          border: none;
+          background: rgba(255, 255, 255, 0.08);
+          color: white;
+          position: relative;
+          transition: all .2s ease;
+        }
+
+        .cal-day.empty { background: transparent; cursor: default; }
+
+        .cal-day.past {
+          opacity: .35;
+          cursor: not-allowed;
+          background: transparent;
+        }
+
+        .cal-day.available {
+          cursor: pointer;
+          background: rgba(255, 255, 255, 0.15);
+        }
+
+        .cal-day.available:hover {
+          background: #f4edda;
+          color: var(--green);
+        }
+
+        .cal-day.booked {
+          background: rgba(217, 83, 79, 0.35);
+          color: #ff9b98;
+          border: 1px solid rgba(217, 83, 79, 0.6);
+          cursor: not-allowed;
+          text-decoration: line-through;
+        }
+
+        .cal-day.selected {
+          background: #f4edda !important;
+          color: var(--green) !important;
+          font-weight: 700;
+          box-shadow: 0 0 10px rgba(244, 237, 218, 0.5);
+        }
+
+        .cal-day.in-range {
+          background: rgba(244, 237, 218, 0.3) !important;
+          color: white !important;
+        }
+
+        .calendar-legend {
+          display: flex;
+          gap: 1.25rem;
+          margin-top: 1rem;
+          font-size: .72rem;
+          color: rgba(255, 255, 255, 0.75);
+          justify-content: center;
+        }
+
+        .legend-item { display: flex; align-items: center; gap: .4rem; }
+
+        .legend-dot {
+          width: 10px;
+          height: 10px;
+          border-radius: 3px;
+        }
+
+        .legend-dot.avail { background: rgba(255, 255, 255, 0.25); }
+        .legend-dot.booked { background: var(--booked); }
+        .legend-dot.selected { background: #f4edda; }
 
         .booking-intro .section-kicker { color: #d8c58e; }
         .booking-intro .section-title { color: white; }
@@ -660,7 +876,7 @@ export default function ResortBooking() {
           flex-direction: column;
           gap: .3rem;
           width: 100%;
-          min-width: 0; /* Prevents flex/grid overflowing */
+          min-width: 0;
           box-sizing: border-box;
         }
 
@@ -688,7 +904,6 @@ export default function ResortBooking() {
           font-size: .85rem;
         }
 
-        /* Strict Sizing for Mobile Date Picker */
         .field input[type="date"] {
           -webkit-appearance: none;
           -moz-appearance: none;
@@ -726,34 +941,33 @@ export default function ResortBooking() {
           word-break: break-all;
         }
 
+        /* ENLARGED PAYMENT & QR CODE BOX */
         .payment-box {
           margin-top: .2rem;
-          padding: .9rem;
+          padding: 1.1rem;
           border-radius: 12px;
           background: var(--cream);
           border: 1px solid #e3dece;
           display: grid;
-          grid-template-columns: 95px 1fr;
-          gap: .9rem;
+          grid-template-columns: 160px 1fr;
+          gap: 1.25rem;
           align-items: center;
           box-sizing: border-box;
           width: 100%;
         }
 
         .qr {
-          width: 95px;
-          height: 95px;
+          width: 160px;
+          height: 160px;
           background: white;
-          border-radius: 8px;
+          border-radius: 12px;
           border: 1px solid #ddd9cd;
-          padding: 4px;
+          padding: 6px;
           object-fit: contain;
+          box-shadow: 0 4px 12px rgba(0,0,0,.06);
         }
 
-        .payment-box h3 {
-          margin: 0 0 .25rem;
-          font-size: .88rem;
-        }
+        .payment-box h3 { margin: 0 0 .25rem; font-size: .88rem; }
 
         .payment-box p {
           margin: 0 0 .6rem;
@@ -787,7 +1001,7 @@ export default function ResortBooking() {
         .success { background: #e3ecd9; color: #304b27; border: 1px solid #aebe9d; }
         .error { background: #f5dfd8; color: #8b3e28; border: 1px solid #d7a595; }
 
-        /* LIGHTBOX POPUP */
+        /* LIGHTBOX */
         .lightbox {
           position: fixed;
           inset: 0;
@@ -826,58 +1040,42 @@ export default function ResortBooking() {
         .light-nav.prev { left: 1rem; }
         .light-nav.next { right: 1rem; }
 
-        /* MOBILE MEDIA QUERIES */
         @media (max-width: 768px) {
           .nav-links { display: none; }
           .hero { min-height: auto; }
           .hero-content { grid-template-columns: 1fr; padding-top: 6rem; gap: 2rem; }
           .booking-inner { grid-template-columns: 1fr; }
-          
-          .booking-card {
-            padding: 1.25rem 1rem;
-          }
-
-          /* Gallery Mobile Fix: 100% width card with zero overflow */
-          .gallery-card { 
-            flex: 0 0 100%; 
-            height: 350px; 
-          }
-
-          /* Stack fields cleanly on small mobile screens */
-          .field-grid { 
-            grid-template-columns: 1fr; 
-          }
-          
-          .field.full { 
-            grid-column: auto; 
-          }
+          .booking-card { padding: 1.25rem 1rem; }
+          .gallery-card { flex: 0 0 100%; height: 350px; }
+          .field-grid { grid-template-columns: 1fr; }
+          .field.full { grid-column: auto; }
           
           .payment-box { 
             grid-template-columns: 1fr; 
-            text-align: center;
+            text-align: center; 
+            justify-items: center;
           }
-          
           .qr { 
+            width: 200px;
+            height: 200px;
+            max-width: 100%;
             margin: 0 auto; 
           }
         }
       `}</style>
 
-      {/* 1. TITLE / INTRODUCTION + GOOGLE MAP */}
+      {/* HERO SECTION */}
       <section className="hero" id="home">
         <nav className="nav">
           <a className="logo" href="#home">
-            <span className="logo-mark">✦</span>
-            TRESORA
+            <span className="logo-mark">✦</span> TRESORA
           </a>
-
           <div className="nav-links">
             <a href="#home">Home</a>
             <a href="#gallery">Gallery</a>
             <a href="#booking">Stay</a>
             <a href="#booking">Contact</a>
           </div>
-
           <span style={{ color: "rgba(255,255,255,.8)", fontSize: ".78rem" }}>
             Tanay, Rizal
           </span>
@@ -890,13 +1088,11 @@ export default function ResortBooking() {
               TRESORA
               <span className="script">Farm & Resort Getaway</span>
             </h1>
-
             <p className="hero-description">
               Escape to a peaceful countryside retreat where nature, comfort,
               fresh farm experiences, and riverside moments come together in
               Tanay, Rizal.
             </p>
-
             <div className="hero-actions">
               <a className="primary-btn" href="#gallery">
                 Explore gallery →
@@ -905,7 +1101,6 @@ export default function ResortBooking() {
                 Reserve stay
               </a>
             </div>
-
             <div className="hero-meta">
               {resortHighlights.map((item) => (
                 <div className="hero-stat" key={item.label}>
@@ -935,7 +1130,6 @@ export default function ResortBooking() {
               <h3>Tresora Tanay Farm and Resort</h3>
               <span>Tanay, Rizal, Philippines</span>
             </div>
-
             <div className="map-frame-container">
               <iframe
                 title="Tresora Tanay Farm and Resort Location Map"
@@ -948,7 +1142,7 @@ export default function ResortBooking() {
         </div>
       </section>
 
-      {/* 2. GALLERY */}
+      {/* GALLERY SECTION */}
       <section className="gallery-section" id="gallery">
         <div className="section-head">
           <div>
@@ -1017,17 +1211,112 @@ export default function ResortBooking() {
         </div>
       </section>
 
-      {/* 3. BOOKING */}
+      {/* BOOKING & CALENDAR SECTION */}
       <section className="booking-section" id="booking">
         <div className="booking-inner">
           <div className="booking-intro">
             <p className="section-kicker">Your perfect getaway awaits</p>
             <h2 className="section-title">Reserve Your Stay</h2>
             <p>
-              Fill in your details below to request a reservation. Complete your
-              deposit through QRPH and attach your proof of payment so we can
-              confirm your booking shortly.
+              Check our live availability calendar below. Select your stay,
+              complete your deposit via QRPH, and attach proof of payment.
             </p>
+
+            {/* LIVE CALENDAR */}
+            <div className="calendar-card">
+              <div className="calendar-header">
+                <h3>
+                  {monthName} {year}
+                </h3>
+                <div className="arrow-group">
+                  <button
+                    type="button"
+                    className="cal-nav-btn"
+                    onClick={() => changeMonth(-1)}
+                    aria-label="Previous month"
+                  >
+                    ‹
+                  </button>
+                  <button
+                    type="button"
+                    className="cal-nav-btn"
+                    onClick={() => changeMonth(1)}
+                    aria-label="Next month"
+                  >
+                    ›
+                  </button>
+                </div>
+              </div>
+
+              <div className="calendar-weekdays">
+                <span>Sun</span>
+                <span>Mon</span>
+                <span>Tue</span>
+                <span>Wed</span>
+                <span>Thu</span>
+                <span>Fri</span>
+                <span>Sat</span>
+              </div>
+
+              <div className="calendar-grid">
+                {Array.from({ length: firstDayIndex }).map((_, idx) => (
+                  <div key={`empty-${idx}`} className="cal-day empty" />
+                ))}
+
+                {Array.from({ length: totalDaysInMonth }).map((_, idx) => {
+                  const day = idx + 1;
+                  const dateStr = formatDateStr(year, month, day);
+                  const booked = isDateBooked(dateStr);
+                  const isPast = dateStr < todayStr;
+                  const isCheckIn = formData.checkIn === dateStr;
+                  const isCheckOut = formData.checkOut === dateStr;
+                  const isInRange =
+                    formData.checkIn &&
+                    formData.checkOut &&
+                    dateStr > formData.checkIn &&
+                    dateStr < formData.checkOut;
+
+                  let classNames = "cal-day";
+                  if (isPast) classNames += " past";
+                  else if (booked) classNames += " booked";
+                  else classNames += " available";
+
+                  if (isCheckIn || isCheckOut) classNames += " selected";
+                  if (isInRange) classNames += " in-range";
+
+                  return (
+                    <button
+                      key={dateStr}
+                      type="button"
+                      className={classNames}
+                      disabled={booked || isPast}
+                      onClick={() => handleCalendarDayClick(dateStr)}
+                      title={
+                        booked
+                          ? "Already Booked"
+                          : isPast
+                            ? "Past Date"
+                            : "Click to select date"
+                      }
+                    >
+                      {day}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="calendar-legend">
+                <div className="legend-item">
+                  <span className="legend-dot avail" /> Available
+                </div>
+                <div className="legend-item">
+                  <span className="legend-dot booked" /> Booked
+                </div>
+                <div className="legend-item">
+                  <span className="legend-dot selected" /> Selected
+                </div>
+              </div>
+            </div>
 
             <div className="experience-list">
               <div className="experience">
@@ -1074,7 +1363,6 @@ export default function ResortBooking() {
                     required
                     value={formData.fullName}
                     onChange={handleChange}
-                    placeholder=""
                   />
                 </div>
 
@@ -1086,7 +1374,6 @@ export default function ResortBooking() {
                     required
                     value={formData.phone}
                     onChange={handleChange}
-                    placeholder=""
                   />
                 </div>
 
@@ -1098,28 +1385,28 @@ export default function ResortBooking() {
                     required
                     value={formData.email}
                     onChange={handleChange}
-                    placeholder=""
                   />
                 </div>
 
                 <div className="field">
-                  <label>Check-in *</label>
+                  <label>Check-in | 1:00 PM | *</label>
                   <input
                     type="date"
                     name="checkIn"
                     required
+                    min={todayStr}
                     value={formData.checkIn}
                     onChange={handleChange}
                   />
                 </div>
 
                 <div className="field">
-                  <label>Check-out *</label>
+                  <label>Check-out | 11:00 AM | *</label>
                   <input
                     type="date"
                     name="checkOut"
                     required
-                    min={formData.checkIn || undefined}
+                    min={formData.checkIn || todayStr}
                     value={formData.checkOut}
                     onChange={handleChange}
                   />
@@ -1175,7 +1462,6 @@ export default function ResortBooking() {
                       accept="image/*,application/pdf"
                       onChange={handleChange}
                       style={{ display: "none" }}
-                      required
                     />
                     {formData.receiptFile ? (
                       <span className="file-name-preview">
@@ -1208,6 +1494,7 @@ export default function ResortBooking() {
         </div>
       </section>
 
+      {/* LIGHTBOX */}
       {activeImage && (
         <div
           className="lightbox"
